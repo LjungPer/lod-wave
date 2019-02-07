@@ -1,0 +1,8 @@
+numpy
+scipy
+matplotlib
+ipython
+ipyparallel
+-e git+https://github.com/LjungPer/gridlod#egg=gridlod
+
+# need to install 'scikit-sparse' separately because it's broken
