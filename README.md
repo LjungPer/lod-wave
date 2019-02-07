@@ -4,6 +4,19 @@
 #### Broken due to missing methods, for example `convertpIndexToCoordinate` in `gridlod.util`.
 #### This is likely due to the Python 3 refactor
 
+## Switching to a virtual environment ([guide](https://alysivji.github.io/setting-up-pyenv-virtualenvwrapper.html) to set this up: )
+#### If you have not made a virtual environment for this project:
+
+```mkvirtualenv lod-wave```
+
+#### To switch to the venv for this project:
+
+```workon lod-wave```
+
+#### Exit the venv by running
+
+```deactivate```
+
 ## Installing dependencies
 Simply run `pip install -r requirements.txt` to install most of the dependencies.
 
