@@ -30,7 +30,7 @@ This needs to be installed with `pip install scikit-sparse`.
 
 
 ## Updating dependencies
-Most Python dependencies are managed by `pip-compile`, so you will need that tool.
+Most Python dependencies are managed by `pip-compile`, so you will need that tool. ([Installation guide](https://github.com/jazzband/pip-tools#installation))
 
 To add a new package, simply add it to the list in `requirements.in`.
 
