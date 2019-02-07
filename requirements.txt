@@ -5,30 +5,69 @@
 #    pip-compile --output-file requirements.txt requirements.in
 #
 -e git+https://github.com/LjungPer/gridlod#egg=gridlod
+alabaster==0.7.12         # via sphinx
+atomicwrites==1.3.0       # via pytest
+attrs==18.2.0             # via pytest
+babel==2.6.0              # via sphinx
 backcall==0.1.0           # via ipython
+certifi==2018.11.29       # via requests
+chardet==3.0.4            # via requests
+coverage==4.5.2           # via pytest-cov
 cycler==0.10.0            # via matplotlib
+cython==0.29.4            # via pymor
 decorator==4.3.2          # via ipyparallel, ipython, traitlets
+docker-pycreds==0.4.0     # via docker
+docker==3.7.0             # via pymor
+docopt==0.6.2             # via pymor
+docutils==0.14            # via sphinx
+envparse==0.2.0           # via pymor
+idna==2.8                 # via requests
+imagesize==1.1.0          # via sphinx
 ipykernel==5.1.0          # via ipyparallel
 ipyparallel==6.2.3
 ipython-genutils==0.2.0   # via ipyparallel, traitlets
 ipython==7.2.0
 jedi==0.13.2              # via ipython
+jinja2==2.10              # via sphinx
 jupyter-client==5.2.4     # via ipykernel, ipyparallel
 jupyter-core==4.4.0       # via jupyter-client
 kiwisolver==1.0.1         # via matplotlib
+markupsafe==1.1.0         # via jinja2
 matplotlib==3.0.2
+more-itertools==5.0.0     # via pytest
 numpy==1.16.1
+packaging==19.0           # via pymor, sphinx
 parso==0.3.3              # via jedi
 pexpect==4.6.0            # via ipython
 pickleshare==0.7.5        # via ipython
+pillow==5.4.1             # via pymor
+pluggy==0.8.1             # via pytest
 prompt-toolkit==2.0.8     # via ipython
 ptyprocess==0.6.0         # via pexpect
-pygments==2.3.1           # via ipython
-pyparsing==2.3.1          # via matplotlib
+py==1.7.0                 # via pytest
+pyamg==4.0.0              # via pymor
+pybind11==2.2.4           # via pyamg
+pyevtk==1.1.1             # via pymor
+pygments==2.3.1           # via ipython, sphinx
+pymor[full]==0.5.1
+pyopengl==3.1.0           # via pymor
+pyparsing==2.3.1          # via matplotlib, packaging
+pyqt5-sip==4.19.13        # via pyqt5
+pyqt5==5.11.3             # via pymor
+pytest-cov==2.6.1         # via pymor
+pytest==4.2.0             # via pyamg, pymor, pytest-cov
 python-dateutil==2.8.0    # via ipyparallel, jupyter-client, matplotlib
+pytz==2018.9              # via babel
 pyzmq==17.1.2             # via ipyparallel, jupyter-client
+qt.py==1.1.0              # via pymor
+requests==2.21.0          # via docker, sphinx
 scipy==1.2.0
-six==1.12.0               # via cycler, prompt-toolkit, python-dateutil, traitlets
+six==1.12.0               # via cycler, docker, docker-pycreds, more-itertools, packaging, prompt-toolkit, pytest, python-dateutil, sphinx, traitlets, websocket-client
+snowballstemmer==1.2.1    # via sphinx
+sphinx==1.8.4             # via pymor
+sphinxcontrib-websupport==1.1.0  # via sphinx
 tornado==5.1.1            # via ipykernel, ipyparallel, jupyter-client
 traitlets==4.3.2          # via ipykernel, ipyparallel, ipython, jupyter-client, jupyter-core
+urllib3==1.24.1           # via requests
 wcwidth==0.1.7            # via prompt-toolkit
+websocket-client==0.54.0  # via docker
