@@ -1,7 +1,7 @@
 import numpy as np
 from gridlod import fem, util, linalg
 
-# Saddle point problem solver
+
 class schurComplementSolver:
     def __init__(self, NCache=None):
         if NCache is not None:
@@ -22,7 +22,6 @@ def ritzProjectionToFinePatchWithGivenSaddleSolver(world,
                                                    saddleSolver):
     d = np.size(NPatchCoarse)
     NPatchFine = NPatchCoarse * world.NCoarseElement
-    NpFine = np.prod(NPatchFine + 1)
 
     # Find what patch faces are common to the world faces, and inherit
     # boundary conditions from the world for those. For the other
@@ -38,7 +37,7 @@ def ritzProjectionToFinePatchWithGivenSaddleSolver(world,
 
     # Using schur complement solver for the case when there are no
     # Dirichlet conditions does not work. Fix if necessary.
-    assert (np.any(boundaryMap == True))
+    assert (np.any(boundaryMap))
 
     fixed = util.boundarypIndexMap(NPatchFine, boundaryMap)
 
@@ -65,6 +64,7 @@ class CoarseScaleInformation:
         self.correctorFluxTF = correctorFluxTF
         self.basisFluxTF = basisFluxTF
 
+
 class elementCorrector:
     def __init__(self, world, k, iElementWorldCoarse, saddleSolver=None):
         self.k = k
@@ -72,7 +72,6 @@ class elementCorrector:
         self.world = world
 
         # Compute (NPatchCoarse, iElementPatchCoarse) from (k, iElementWorldCoarse, NWorldCoarse)
-        d = np.size(iElementWorldCoarse)
         NWorldCoarse = world.NWorldCoarse
 
         iPatchWorldCoarse = np.maximum(0, iElementWorldCoarse - k).astype('int64')
@@ -81,7 +80,7 @@ class elementCorrector:
         self.iElementPatchCoarse = iElementWorldCoarse - iPatchWorldCoarse
         self.iPatchWorldCoarse = iPatchWorldCoarse
 
-        if saddleSolver == None:
+        if saddleSolver is None:
             self._saddleSolver = schurComplementSolver()
         else:
             self._saddleSolver = saddleSolver
@@ -93,7 +92,6 @@ class elementCorrector:
     @saddleSolver.setter
     def saddleSolver(self, value):
         self._saddleSolver = value
-
 
     def compute_element_corrector(self, b_patch, a_patch, IPatch, ARhsList):
         '''Compute the fine correctors over the patch.
@@ -149,7 +147,6 @@ class elementCorrector:
                                                                         self.saddleSolver)
 
         return correctorsList
-
 
     def compute_corrector(self, coefficientPatch, corrCoefficientPatch, IPatch):
         '''Compute the fine correctors over the patch.

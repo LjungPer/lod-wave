@@ -154,8 +154,7 @@ for N in NList:
 
         # linear system
         A = (1. / (tau ** 2)) * MmsFree + (1. / tau) * SmsFree + KmsFree
-        b = LmsFree + (1. / tau) * SmsFree * V[n][free] + (2. / (tau ** 2)) * MmsFree * V[n][free] - (1. / (
-        tau ** 2)) * MmsFree * V[n - 1][free]
+        b = LmsFree + (1. / tau) * SmsFree * V[n][free] + (2. / (tau ** 2)) * MmsFree * V[n][free] - (1. / (tau ** 2)) * MmsFree * V[n - 1][free]
 
         # store ms matrix R^{ms',h}_{H,i,k}
         RmsFull = ms_basis.T * S * fs_solutions[i]

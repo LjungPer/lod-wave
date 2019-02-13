@@ -1,6 +1,7 @@
 import numpy as np
 from gridlod import fem, util, linalg
 
+
 class schurComplementSolver:
     def __init__(self, NCache=None):
         if NCache is not None:
@@ -21,7 +22,6 @@ def ritzProjectionToFinePatchWithGivenSaddleSolver(world,
                                                    saddleSolver):
     d = np.size(NPatchCoarse)
     NPatchFine = NPatchCoarse * world.NCoarseElement
-    NpFine = np.prod(NPatchFine + 1)
 
     # Find what patch faces are common to the world faces, and inherit
     # boundary conditions from the world for those. For the other
@@ -37,7 +37,7 @@ def ritzProjectionToFinePatchWithGivenSaddleSolver(world,
 
     # Using schur complement solver for the case when there are no
     # Dirichlet conditions does not work. Fix if necessary.
-    assert (np.any(boundaryMap == True))
+    assert (np.any(boundaryMap))
 
     fixed = util.boundarypIndexMap(NPatchFine, boundaryMap)
 
@@ -47,8 +47,9 @@ def ritzProjectionToFinePatchWithGivenSaddleSolver(world,
 
     return projectionsList
 
+
 class nodeCorrector:
-    def __init__(self, world, k, iNodeWorldCoarse, node_index = None, saddleSolver=None):
+    def __init__(self, world, k, iNodeWorldCoarse, node_index=None, saddleSolver=None):
         self.k = k
         self.iNodeWorldCoarse = iNodeWorldCoarse
         self.world = world
@@ -66,7 +67,7 @@ class nodeCorrector:
         if d == 1:
             self.iPatchWorldCoarse = np.array([iPatchWorldCoarse])
 
-        if saddleSolver == None:
+        if saddleSolver is None:
             self._saddleSolver = schurComplementSolver()
         else:
             self._saddleSolver = saddleSolver
@@ -98,7 +99,7 @@ class nodeCorrector:
 
         iPatchWorldFine = iPatchWorldCoarse * NCoarseElement
         patchpIndexMap = util.lowerLeftpIndexMap(NPatchFine, world.NWorldFine)
-        patchpStartIndex = util.convertpCoordinateToIndex(world.NWorldFine, iPatchWorldFine)
+        patchpStartIndex = util.convertpCoordIndexToLinearIndex(world.NWorldFine, iPatchWorldFine)
 
         patch_indices = patchpStartIndex + patchpIndexMap
 
@@ -113,14 +114,11 @@ class nodeCorrector:
         if prev_fs_sol is not None:
             bPatchFull += K_patch * prev_fs_sol.toarray()[:, node_index][patch_indices]
 
-        fs_patch_solution = ritzProjectionToFinePatchWithGivenSaddleSolver(world,
-                                                                        self.iPatchWorldCoarse,
-                                                                        NPatchCoarse,
-                                                                        S_patch + K_patch,
-                                                                        [bPatchFull],
-                                                                        IPatch,
-                                                                        self.saddleSolver)
-
+        fs_patch_solution = ritzProjectionToFinePatchWithGivenSaddleSolver(world, self.iPatchWorldCoarse,
+                                                                           NPatchCoarse, S_patch + K_patch,
+                                                                           [bPatchFull], IPatch,
+                                                                           self.saddleSolver)
+        
         fs_solution = np.zeros(world.NpFine)
         fs_solution[patch_indices] += fs_patch_solution[0]
 
@@ -154,7 +152,7 @@ class nodeCorrector:
         for node_index in range(NpCoarse):
 
             bPatchFull = np.zeros(NpFine)
-            bPatchFull += KPatchFull * prev_fs_sol.toarray()[:,node_index]
+            bPatchFull += KPatchFull * prev_fs_sol.toarray()[:, node_index]
             bPatchFullList.append(bPatchFull)
 
         correctorsList = ritzProjectionToFinePatchWithGivenSaddleSolver(world,
@@ -182,7 +180,7 @@ class nodeCorrector:
 
         iPatchWorldFine = iPatchWorldCoarse * NCoarseElement
         patchpIndexMap = util.lowerLeftpIndexMap(NPatchFine, world.NWorldFine)
-        patchpStartIndex = util.convertpCoordinateToIndex(world.NWorldFine, iPatchWorldFine)
+        patchpStartIndex = util.convertpCoordIndexToLinearIndex(world.NWorldFine, iPatchWorldFine)
 
         patch_indices = patchpStartIndex + patchpIndexMap
 
@@ -197,13 +195,10 @@ class nodeCorrector:
         bPatchFull += K_patch * basis.toarray()[:, node_index][patch_indices]
         bPatchFull += S_patch * basis.toarray()[:, node_index][patch_indices]
 
-        ms_basis_patch_solution = ritzProjectionToFinePatchWithGivenSaddleSolver(world,
-                                                                        self.iPatchWorldCoarse,
-                                                                        NPatchCoarse,
-                                                                        S_patch + K_patch,
-                                                                        [bPatchFull],
-                                                                        IPatch,
-                                                                        self.saddleSolver)
+        ms_basis_patch_solution = ritzProjectionToFinePatchWithGivenSaddleSolver(world, self.iPatchWorldCoarse,
+                                                                                 NPatchCoarse, S_patch + K_patch,
+                                                                                 [bPatchFull], IPatch,
+                                                                                 self.saddleSolver)
 
         ms_basis_solution = np.zeros(world.NpFine)
         ms_basis_solution[patch_indices] += ms_basis_patch_solution[0]

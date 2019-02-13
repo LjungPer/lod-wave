@@ -7,8 +7,6 @@ import lod_wave
 from visualize import drawCoefficient
 from math import log
 import gc
-import os
-import psutil
 import time
 
 '''
@@ -16,11 +14,11 @@ Settings
 '''
 
 # fine mesh parameters
-fine = 128
+fine = 64
 NFine = np.array([fine, fine])
 NpFine = np.prod(NFine + 1)
 boundaryConditions = np.array([[0, 0], [0, 0]])
-world = World(NFine, NFine / NFine, boundaryConditions)
+world = World(NFine, NFine // NFine, boundaryConditions)
 NWorldFine = world.NWorldCoarse * world.NCoarseElement
 
 # fine grid elements and nodes
@@ -28,44 +26,43 @@ xt = util.tCoordinates(NFine).flatten()
 xp = util.pCoordinates(NFine).flatten()
 
 # time step parameters
-tau = 0.02
-numTimeSteps = 5
+tau = 0.05
+numTimeSteps = 8
 n = 2
 
 # ms coefficient B
-B = np.kron(np.random.rand(fine/n, fine/n), np.ones((n, n)))
+B = np.kron(np.random.rand(fine // n, fine // n), np.ones((n, n)))
 bFine = B.flatten()
-plt.figure("OriginalCoefficient")
-drawCoefficient(NWorldFine, bFine)
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
-plt.title(r'Multiscale coefficient $B(x,y)$', fontsize=24)
-plt.show()
+#plt.figure("OriginalCoefficient")
+#drawCoefficient(NWorldFine, bFine)
+#plt.rc('text', usetex=True)
+#plt.rc('font', family='serif')
+#plt.title(r'Multiscale coefficient $B(x,y)$', fontsize=24)
+#plt.show()
 
 # ms coefficient A
-A = np.kron(np.random.rand(fine/n, fine/n), np.ones((n, n)))
+A = np.kron(np.random.rand(fine // n, fine // n), np.ones((n, n)))
 aFine = A.flatten()
-plt.figure("OriginalCoefficient")
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
-drawCoefficient(NWorldFine, aFine)
-plt.title(r'Multiscale coefficient $A(x,y)$', fontsize=24)
-plt.show()
+#plt.figure("OriginalCoefficient")
+#plt.rc('text', usetex=True)
+#plt.rc('font', family='serif')
+#drawCoefficient(NWorldFine, aFine)
+#plt.title(r'Multiscale coefficient $A(x,y)$', fontsize=24)
+#plt.show()
 
 # localization and mesh width parameters
-NList = [2, 4]
+NList = [2, 4, 8, 16]
 error = []
+y = []
 start = time.time()
 for N in NList:
 
     print('N = %d' %N)
-    process = psutil.Process(os.getpid())
-    print('%d MiB usage' % (process.memory_info()[0] / (pow(2, 20))))
-
     k_0 = log(N, 2)
+    y.append(1. / N)
     # coarse mesh parameters
     NWorldCoarse = np.array([N, N])
-    NCoarseElement = NFine / NWorldCoarse
+    NCoarseElement = NFine // NWorldCoarse
     world = World(NWorldCoarse, NCoarseElement, boundaryConditions)
 
     # grid nodes
@@ -76,9 +73,9 @@ for N in NList:
     Compute multiscale basis
     '''
 
-    # patch generator and coefficients
-    IPatchGenerator = lambda i, N: interp.L2ProjectionPatchMatrix(i, N, NWorldCoarse,
-                                                                  NCoarseElement, boundaryConditions)
+    def IPatchGenerator(i, N):
+        return interp.L2ProjectionPatchMatrix(i, N, NWorldCoarse, NCoarseElement, boundaryConditions)
+
     b_coef = coef.coefficientFine(NWorldCoarse, NCoarseElement, bFine)
     a_coef = coef.coefficientFine(NWorldCoarse, NCoarseElement, aFine / tau)
 
@@ -92,6 +89,20 @@ for N in NList:
     ms_basis = basis - basis_correctors
     del basis, basis_correctors
     gc.collect()
+
+    prev_fs_sol = ms_basis
+    fs_solutions = []
+    for i in range(numTimeSteps):
+        print('Calculating correction at N = %d, i = %d' % (N, i))
+
+        # solve non-localized system
+        lod = lod_wave.LodWave(b_coef, world, k_0 + 1, IPatchGenerator, a_coef, prev_fs_sol)
+        lod.solve_fs_system(localized=True)
+
+        # store sparse solution
+        prev_fs_sol = sparse.csc_matrix(np.array(np.column_stack(lod.fs_list)))
+        fs_solutions.append(prev_fs_sol)
+
 
     '''
     Initialize data
@@ -137,22 +148,22 @@ for N in NList:
 
         # linear system
         A = (1. / (tau ** 2)) * MmsFree + (1. / tau) * SmsFree + KmsFree
-        b = LmsFree + (1. / tau) * SmsFree * V[n][free] + (2. / (tau ** 2)) * MmsFree * V[n][free] - (1. / (
-        tau ** 2)) * MmsFree * V[n - 1][free]
+        b = LmsFree + (1. / tau) * SmsFree * V[n][free] + (2. / (tau ** 2)) * MmsFree * V[n][free] \
+            - (1. / (tau ** 2)) * MmsFree * V[n - 1][free]
 
         # solve localized system
-        lod = lod_wave.LodWave(b_coef, world, k_0 + 1, IPatchGenerator, a_coef, prev_fs_sol)
-        lod.solve_fs_system_parallel()
+        #lod = lod_wave.LodWave(b_coef, world, k_0 + 1, IPatchGenerator, a_coef, prev_fs_sol)
+        #lod.solve_fs_system(localized=True)
 
         # store sparse solution
-        prev_fs_sol = sparse.csc_matrix(np.array(np.column_stack(lod.fs_list)))
+        #prev_fs_sol = sparse.csc_matrix(np.array(np.column_stack(lod.fs_list)))
 
         # store ms matrix R^{ms',h}_{H,i,k}
-        RmsFree = (ms_basis.T * S * prev_fs_sol)[free][:, free]
+        RmsFree = (ms_basis.T * S * fs_solutions[i])[free][:, free]
         RmsFreeList.append(RmsFree)
 
         # add sum to linear system
-        if i is not 0:
+        if i != 0:
             for j in range(i):
                 b += (1. / tau) * RmsFreeList[j] * V[n - 1 - j][free]
 
@@ -179,12 +190,12 @@ for N in NList:
         print('Calc w^n N=%d, i=%d' % (N, j))
 
         # solve localized system
-        lod = lod_wave.LodWave(b_coef, world, k_0 + 1, IPatchGenerator, a_coef, prev_fs_sol)
-        lod.solve_fs_system_parallel()
+        #lod = lod_wave.LodWave(b_coef, world, k_0 + 1, IPatchGenerator, a_coef, prev_fs_sol)
+        #lod.solve_fs_system(localized=True)
         # store sparse solution
-        prev_fs_sol = sparse.csc_matrix(np.array(np.column_stack(lod.fs_list)))
+        #prev_fs_sol = sparse.csc_matrix(np.array(np.column_stack(lod.fs_list)))
 
-        WFine += prev_fs_sol * V[n - j]
+        WFine += fs_solutions[j] * V[n - j]
         gc.collect()
 
 
@@ -228,17 +239,19 @@ for N in NList:
     gc.collect()
 
 end = time.time()
-print("Elapsed time: %d" %(end-start))
+print("Elapsed time: %d minutes." % (int((end - start) / 60)))
 
 # plot errors
-plt.figure('Error comparison')
+plt.figure('Error comparison', figsize=(16, 9))
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
-plt.subplots_adjust(left=0.075, bottom=0.06, right=0.99, top=0.92, wspace=0.1, hspace=0.2)
-plt.tick_params(labelsize=14)
-plt.loglog(NList, error, '--s', basex=2, basey=2, label='New LOD')
+plt.subplots_adjust(left=0.05, bottom=0.12, right=0.99, top=0.92, wspace=0.1, hspace=0.2)
+plt.tick_params(labelsize=24)
+plt.loglog(NList, error, '--s', basex=2, basey=2, label='LOD')
+plt.loglog(NList, y, '--k', basex=2, basey=2, label=r'$\mathcal{O}(H)$')
 plt.grid(True, which="both")
-plt.title(r'$H^1$-error at $t=%.1f$' % (numTimeSteps * tau), fontsize=22)
-plt.legend(fontsize=16)
+plt.xlabel('$1/H$', fontsize=30)
+plt.title(r'The error $\|u^n-u^n_{\mathrm{ms}, k}\|_{H^1}$ at $T=%.1f$' % (numTimeSteps * tau), fontsize=44)
+plt.legend(fontsize=24)
 
 plt.show()

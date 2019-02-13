@@ -1,3 +1,8 @@
+'''
+Fix required: Parallelizing computations.
+'''
+
+
 import numpy as np
 import lod_node
 from gridlod import util, fem
@@ -5,7 +10,6 @@ import scipy.sparse as sparse
 from copy import deepcopy
 import lod_element
 import multiprocessing
-import time
 
 
 def compute_2d_node(NWorldCoarse, node_index):
@@ -18,6 +22,7 @@ def compute_2d_node(NWorldCoarse, node_index):
 
     return np.array([a, b])
 
+
 def solver(args):
     ecT = args["ecT"]
     b_patch = args["b_patch"]
@@ -28,8 +33,9 @@ def solver(args):
 
     return ecT.compute_localized_node_correction(b_patch, a_patch, IPatch, prev_fs_sol, node_index)
 
+
 class LodWave:
-    def __init__(self, b_coef, world, k, IPatchGenerator, a_coef, prev_fs_sol = None, ms_basis = None):
+    def __init__(self, b_coef, world, k, IPatchGenerator, a_coef, prev_fs_sol=None, ms_basis=None):
         self.world = world
         self.k = k
         self.IPatchGenerator = IPatchGenerator
@@ -49,7 +55,6 @@ class LodWave:
 
         if ms_basis is not None:
             self.ms_basis = ms_basis
-
 
     def solve_fs_system(self, localized=False):
         '''
@@ -93,8 +98,11 @@ class LodWave:
 
         self.fs_list = fs_list
 
-
     def solve_fs_system_parallel(self):
+
+        '''
+        Something bugged with this one. Look into ipyparallel
+        '''
 
         world = self.world
         k = self.k
@@ -123,18 +131,17 @@ class LodWave:
         pool.close()
         pool.join()
 
-
         self.fs_list = fs_list
 
     def compute_basis_correctors_node(self, localized=False):
         '''
-        Description
+        Why did I construct this one..?
         '''
 
         world = self.world
         k = self.k
         IPatchGenerator = self.IPatchGenerator
-        b_coef = self.b_coef
+        b_coef = self.b_coefconvertpCoordIndexToLinea
         a_coef = self.a_coef
 
         NpCoarse = np.prod(world.NWorldCoarse + 1)
@@ -144,7 +151,6 @@ class LodWave:
             for node_index in range(NpCoarse):
                 node_index_arr = compute_2d_node(world.NWorldCoarse, node_index)
                 ecT = lod_node.nodeCorrector(world, k, node_index_arr)
-
 
                 b_patch = b_coef.localize(ecT.iPatchWorldCoarse, ecT.NPatchCoarse)
                 a_patch = a_coef.localize(ecT.iPatchWorldCoarse, ecT.NPatchCoarse)
@@ -160,13 +166,11 @@ class LodWave:
 
             b_patch = b_coef.localize(ecT.iPatchWorldCoarse, ecT.NPatchCoarse)
             a_patch = a_coef.localize(ecT.iPatchWorldCoarse, ecT.NPatchCoarse)
-
             IPatch = IPatchGenerator(ecT.iPatchWorldCoarse, ecT.NPatchCoarse)
 
             ms_basis_list = ecT.compute_node_correction(b_patch, a_patch, IPatch, prev_fs_sol)
 
         self.ms_basis_list = ms_basis_list
-
 
     def compute_basis_correctors(self):
         '''
@@ -186,15 +190,12 @@ class LodWave:
         
         for element_index in range(NtCoarse):
 
-            iElement = util.convertpIndexToCoordinate(world.NWorldCoarse - 1, element_index)
+            iElement = util.convertpLinearIndexToCoordIndex(world.NWorldCoarse - 1, element_index)
             ecComputeList.append((element_index, iElement))
 
         ecTList = []
         for element_index, iElement in ecComputeList:
             ecT = lod_element.elementCorrector(world, k, iElement)
-            
-            print(ecT.iPatchWorldCoarse)
-            print(ecT.NPatchCoarse)
 
             b_patch = b_coef.localize(ecT.iPatchWorldCoarse, ecT.NPatchCoarse)
             a_patch = a_coef.localize(ecT.iPatchWorldCoarse, ecT.NPatchCoarse)
@@ -207,7 +208,6 @@ class LodWave:
             ecListOrigin[ecCompute[0]] = ecResult
 
         self.ecList = deepcopy(ecListOrigin)
-
 
     def assembleBasisCorrectors(self):
         '''
@@ -244,7 +244,7 @@ class LodWave:
             iPatchWorldFine = ecT.iPatchWorldCoarse * NCoarseElement
 
             patchpIndexMap = util.lowerLeftpIndexMap(NPatchFine, NWorldFine)
-            patchpStartIndex = util.convertpCoordinateToIndex(NWorldFine, iPatchWorldFine)
+            patchpStartIndex = util.convertpCoordIndexToLinearIndex(NWorldFine, iPatchWorldFine)
 
             colsT = TpStartIndices[TInd] + TpIndexMap
             rowsT = patchpStartIndex + patchpIndexMap
@@ -258,4 +258,3 @@ class LodWave:
 
         self.basis_correctors = basis_correctors
         return basis_correctors
-

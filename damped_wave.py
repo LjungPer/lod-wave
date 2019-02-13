@@ -10,11 +10,11 @@ Settings
 '''
 
 # fine mesh parameters
-fine = 64
+fine = 256
 NFine = np.array([fine])
 NpFine = np.prod(NFine + 1)
 boundaryConditions = np.array([[0, 0]])
-world = World(np.array([256]), NFine / np.array([256]), boundaryConditions)
+world = World(np.array([256]), NFine // np.array([256]), boundaryConditions)
 NWorldFine = world.NWorldCoarse * world.NCoarseElement
 
 # fine grid elements and nodes
@@ -82,7 +82,7 @@ for N in NList:
 
         # solve non-localized system
         lod = lod_wave.LodWave(b_coef, world, np.inf, IPatchGenerator, a_coef, prev_fs_sol, ms_basis)
-        lod.solve_fs_system()
+        lod.solve_fs_system_parallel()
 
         # store sparse solution
         prev_fs_sol = sparse.csc_matrix(np.array(np.column_stack(lod.fs_list)))
