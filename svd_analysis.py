@@ -88,7 +88,6 @@ for i in range(numTimeSteps):
 wn = np.array([np.squeeze(np.asarray(fs_solutions[n].todense())) for n in range(numTimeSteps)])
 u, s, vh = np.linalg.svd(wn)
 
-
 # plot
 plt.figure('Singular values', figsize=(16, 9))
 plt.rc('text', usetex=True)
