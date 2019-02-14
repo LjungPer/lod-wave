@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from gridlod import util, fem, coef, interp, linalg
 from gridlod.world import World
 import lod_wave
-# from visualize import drawCoefficient
 from math import log
 import time
 
@@ -28,18 +27,10 @@ n = 2
 # ms coefficient B
 B = np.kron(np.random.rand(fine // n, fine // n) * 0.9 + 0.1, np.ones((n, n)))
 bFine = B.flatten()
-# plt.figure("OriginalCoefficient")
-# drawCoefficient(NWorldFine, bFine)
-# plt.title('$B(x,y)$', fontsize=24)
-# plt.show()
 
 # ms coefficient A
 A = np.kron(np.random.rand(fine // n, fine // n) * 0.9 + 0.1, np.ones((n, n)))
 aFine = A.flatten()
-# plt.figure("OriginalCoefficient")
-# drawCoefficient(NWorldFine, aFine)
-# plt.title('$A(x,y)$', fontsize=24)
-# plt.show()
 
 # localization and mesh width parameters
 NList = [2, 4, 8, 16, 32]

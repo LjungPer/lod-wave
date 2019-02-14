@@ -5,16 +5,12 @@ from gridlod import util, fem, coef, interp
 from gridlod.world import World
 import lod_wave
 
-'''
-Settings
-'''
-
 # fine mesh parameters
 fine = 1024
 NFine = np.array([fine])
-NpFine = np.prod(NFine+1)
+NpFine = np.prod(NFine + 1)
 boundaryConditions = np.array([[0, 0]])
-world = World(np.array([256]), NFine // NFine, boundaryConditions)
+world = World(NFine, NFine // NFine, boundaryConditions)
 NWorldFine = world.NWorldCoarse * world.NCoarseElement
 
 # fine grid elements and nodes
@@ -44,13 +40,11 @@ world = World(NWorldCoarse, NCoarseElement, boundaryConditions)
 xpCoarse = util.pCoordinates(NWorldCoarse).flatten()
 NpCoarse = np.prod(NWorldCoarse + 1)
 
-'''
-Compute multiscale basis
-'''
 
-# patch generator and coefficients
-IPatchGenerator = lambda i, N: interp.L2ProjectionPatchMatrix(i, N, NWorldCoarse,
-                                                              NCoarseElement, boundaryConditions)
+def IPatchGenerator(i, N):
+    return interp.L2ProjectionPatchMatrix(i, N, NWorldCoarse, NCoarseElement, boundaryConditions)
+
+
 b_coef = coef.coefficientFine(NWorldCoarse, NCoarseElement, bFine)
 a_coef = coef.coefficientFine(NWorldCoarse, NCoarseElement, aFine / tau)
 
@@ -87,5 +81,5 @@ for n in nList:
 plt.xlim(0.25, 0.75)
 plt.title('Solution correction $w^n_x$ for different choices of $n$', fontsize=44)
 plt.grid(True, which="both", ls="--")
-plt.legend(frameon=True, loc=2, fontsize=24)
+plt.legend(frameon=True, loc=1, fontsize=24)
 plt.show()

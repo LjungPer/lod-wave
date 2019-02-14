@@ -5,16 +5,12 @@ from gridlod import util, fem, coef, interp
 from gridlod.world import World
 import lod_wave
 
-'''
-Settings
-'''
-
 # fine mesh parameters
 fine = 1024
 NFine = np.array([fine])
 NpFine = np.prod(NFine + 1)
 boundaryConditions = np.array([[0, 0]])
-world = World(np.array([256]), NFine // np.array([256]), boundaryConditions)
+world = World(NFine, NFine // NFine, boundaryConditions)
 NWorldFine = world.NWorldCoarse * world.NCoarseElement
 
 # fine grid elements and nodes
@@ -22,8 +18,8 @@ xt = util.tCoordinates(NFine).flatten()
 xp = util.pCoordinates(NFine).flatten()
 
 # time step parameters
-tau = 0.001
-numTimeSteps = 10
+tau = 0.02
+numTimeSteps = 100
 
 # ms coefficients
 epsA = 2 ** (-4)
@@ -44,12 +40,7 @@ world = World(NWorldCoarse, NCoarseElement, boundaryConditions)
 xpCoarse = util.pCoordinates(NWorldCoarse).flatten()
 NpCoarse = np.prod(NWorldCoarse + 1)
 
-'''
-Compute multiscale basis
-'''
 
-
-# patch generator and coefficients
 def IPatchGenerator(i, N):
     return interp.L2ProjectionPatchMatrix(i, N, NWorldCoarse, NCoarseElement, boundaryConditions)
 
@@ -66,19 +57,13 @@ basis = fem.assembleProlongationMatrix(NWorldCoarse, NCoarseElement)
 basis_correctors = lod.assembleBasisCorrectors()
 ms_basis = basis - basis_correctors
 
-'''
-Compute finescale system
-
-fs_solutions[i] = {w^i_x}_x
-'''
-
 prev_fs_sol = ms_basis
 fs_solutions = []
 for i in range(numTimeSteps):
 
     # solve system
     lod = lod_wave.LodWave(b_coef, world, k_1, IPatchGenerator, a_coef, prev_fs_sol, ms_basis)
-    lod.solve_fs_system(localized=False)
+    lod.solve_fs_system()
 
     # store sparse solution
     prev_fs_sol = sparse.csc_matrix(np.array(np.column_stack(lod.fs_list)))
