@@ -2,6 +2,7 @@
 
 ## Current status:
 #### Working and up to date
+#### Next: Fix parallel computation. Apply pyMOR.
 
 ## Switching to a virtual environment ([guide](https://alysivji.github.io/setting-up-pyenv-virtualenvwrapper.html) to set this up)
 #### If you have not made a virtual environment for this project:
