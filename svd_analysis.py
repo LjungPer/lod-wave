@@ -19,7 +19,7 @@ xp = util.pCoordinates(NFine).flatten()
 
 # time step parameters
 tau = 0.02
-numTimeSteps = 100
+numTimeSteps = 5
 
 # ms coefficients
 epsA = 2 ** (-4)
@@ -71,8 +71,8 @@ for i in range(numTimeSteps):
 
 # convert finescale corrections to correct shape
 wn = np.array([np.squeeze(np.asarray(fs_solutions[n].todense())) for n in range(numTimeSteps)])
-u, s, vh = np.linalg.svd(wn)
-
+u, s, vh = np.linalg.svd(wn.T)
+print(s)
 # plot
 plt.figure('Singular values', figsize=(16, 9))
 plt.rc('text', usetex=True)
@@ -85,3 +85,4 @@ plt.xlabel('$n$', fontsize=24)
 plt.ylabel('$\sigma$', fontsize=24)
 plt.grid(True, which="both", ls="--")
 plt.show()
+

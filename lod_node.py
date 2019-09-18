@@ -112,8 +112,12 @@ class nodeCorrector:
         bPatchFull = np.zeros(NpFine)
 
         if prev_fs_sol is not None:
-            bPatchFull += K_patch * prev_fs_sol.toarray()[:, node_index][patch_indices]
-
+            if type(prev_fs_sol) is not np.ndarray:
+                bPatchFull += K_patch * prev_fs_sol.toarray()[:, node_index][patch_indices]
+                #bPatchFull += prev_fs_sol.toarray()[:, node_index][patch_indices].T * K_patch
+            else:
+                bPatchFull += K_patch * prev_fs_sol[patch_indices]
+                #bPatchFull += prev_fs_sol[patch_indices].T * K_patch
         fs_patch_solution = ritzProjectionToFinePatchWithGivenSaddleSolver(world, self.iPatchWorldCoarse,
                                                                            NPatchCoarse, S_patch + K_patch,
                                                                            [bPatchFull], IPatch,
@@ -124,12 +128,55 @@ class nodeCorrector:
 
         return fs_solution
 
-    def compute_node_correction(self, b_patch, a_patch, IPatch, prev_fs_sol):
+    def compute_localized_node_correction_test(self, b_patch, a_patch, IPatch, prev_fs_sol, node_index):
+        '''Compute the fine correctors over the node based patch.
+
+        Compute the correctors, for all z \in V^f(U(\omega_{x,k})):
+
+        a(\phi_x, z) + \tau b(\phi_x, z) = a(\lambda_x, z) + \tau b(\lambda_x, z)
+        '''
+
+        world = self.world
+        NCoarseElement = world.NCoarseElement
+        NPatchCoarse = self.NPatchCoarse
+        iPatchWorldCoarse = self.iPatchWorldCoarse
+
+        NPatchFine = NPatchCoarse * NCoarseElement
+        NtFine = np.prod(NPatchFine)
+        NpFine = np.prod(NPatchFine + 1)
+
+        iPatchWorldFine = iPatchWorldCoarse * NCoarseElement
+        patchpIndexMap = util.lowerLeftpIndexMap(NPatchFine, world.NWorldFine)
+        patchpStartIndex = util.convertpCoordIndexToLinearIndex(world.NWorldFine, iPatchWorldFine)
+
+        patch_indices = patchpStartIndex + patchpIndexMap
+
+        b_patch = b_patch.aFine
+        a_patch = a_patch.aFine
+
+        assert (np.size(b_patch) == NtFine)
+        S_patch = fem.assemblePatchMatrix(NPatchFine, world.ALocFine, b_patch)
+        K_patch = fem.assemblePatchMatrix(NPatchFine, world.ALocFine, a_patch)
+        bPatchFull = np.zeros(NpFine)
+
+        bPatchFull += K_patch * prev_fs_sol.toarray()[:, 0][patch_indices]
+        fs_patch_solution = ritzProjectionToFinePatchWithGivenSaddleSolver(world, self.iPatchWorldCoarse,
+                                                                           NPatchCoarse, S_patch + K_patch,
+                                                                           [bPatchFull], IPatch,
+                                                                           self.saddleSolver)
+        
+        fs_solution = np.zeros(world.NpFine)
+        fs_solution[patch_indices] += fs_patch_solution[0]
+
+        return fs_solution
+
+    def compute_node_correction(self, b_patch, a_patch, IPatch, prev_fs_sol, node_index=None):
         '''Compute the fine correctors over full domain
 
         Computes the correction:
 
         a(Q^h\lambda_x, z) + \tau b(Q^h\lambda_x, z) = a(\lambda_x, z) + \tau b(\lambda_x, z)
+        if node_index is given, the calculations are done only for that node (used for rb testing)
         '''
 
         world = self.world
@@ -149,10 +196,15 @@ class nodeCorrector:
         SPatchFull = fem.assemblePatchMatrix(NPatchFine, world.ALocFine, b_patch)
         KPatchFull = fem.assemblePatchMatrix(NPatchFine, world.ALocFine, a_patch)
         bPatchFullList = []
-        for node_index in range(NpCoarse):
+        if node_index is None:
+            for node_index in range(NpCoarse):
 
+                bPatchFull = np.zeros(NpFine)
+                bPatchFull += KPatchFull * prev_fs_sol.toarray()[:, node_index]
+                bPatchFullList.append(bPatchFull)
+        else:
             bPatchFull = np.zeros(NpFine)
-            bPatchFull += KPatchFull * prev_fs_sol.toarray()[:, node_index]
+            bPatchFull += KPatchFull * prev_fs_sol
             bPatchFullList.append(bPatchFull)
 
         correctorsList = ritzProjectionToFinePatchWithGivenSaddleSolver(world,
@@ -162,6 +214,80 @@ class nodeCorrector:
                                                                         bPatchFullList,
                                                                         IPatch,
                                                                         self.saddleSolver)
+        return correctorsList
+
+    def compute_rb_node_correction(self, b_patch, a_patch, IPatch, prev_fs_sol, V):
+
+        world = self.world
+        NCoarseElement = world.NCoarseElement
+        NPatchCoarse = self.NPatchCoarse
+
+        NPatchFine = NPatchCoarse * NCoarseElement
+        NtFine = np.prod(NPatchFine)
+        NpCoarse = np.prod(NPatchCoarse + 1)
+        NpFine = np.prod(NPatchFine + 1)
+        iPatchWorldCoarse = self.iPatchWorldCoarse
+
+        iPatchWorldFine = iPatchWorldCoarse * NCoarseElement
+        patchpIndexMap = util.lowerLeftpIndexMap(NPatchFine, world.NWorldFine)
+        patchpStartIndex = util.convertpCoordIndexToLinearIndex(world.NWorldFine, iPatchWorldFine)
+
+        patch_indices = patchpStartIndex + patchpIndexMap
+        
+        b_patch = b_patch.aFine
+        a_patch = a_patch.aFine
+
+        assert (np.size(b_patch) == NtFine)
+
+        SPatchFull = fem.assemblePatchMatrix(NPatchFine, world.ALocFine, b_patch)
+        KPatchFull = fem.assemblePatchMatrix(NPatchFine, world.ALocFine, a_patch)
+        bPatchFullList = []
+        bPatchFull = np.zeros(len((V.todense())))
+        V = V[:, patch_indices]
+        bPatchFull += prev_fs_sol[patch_indices].T * KPatchFull * V.T
+        bPatchFullList.append(bPatchFull)
+        SPatchFull = V * SPatchFull * V.T
+        KPatchFull = V * KPatchFull * V.T
+
+        correctorsList = linalg.linSolve(KPatchFull + SPatchFull, bPatchFull)
+
+        return correctorsList
+
+    def compute_rb_node_correction_test(self, b_patch, a_patch, IPatch, prev_fs_sol, V):
+
+        world = self.world
+        NCoarseElement = world.NCoarseElement
+        NPatchCoarse = self.NPatchCoarse
+
+        NPatchFine = NPatchCoarse * NCoarseElement
+        NtFine = np.prod(NPatchFine)
+        NpCoarse = np.prod(NPatchCoarse + 1)
+        NpFine = np.prod(NPatchFine + 1)
+        iPatchWorldCoarse = self.iPatchWorldCoarse
+
+        iPatchWorldFine = iPatchWorldCoarse * NCoarseElement
+        patchpIndexMap = util.lowerLeftpIndexMap(NPatchFine, world.NWorldFine)
+        patchpStartIndex = util.convertpCoordIndexToLinearIndex(world.NWorldFine, iPatchWorldFine)
+
+        patch_indices = patchpStartIndex + patchpIndexMap
+        
+        b_patch = b_patch.aFine
+        a_patch = a_patch.aFine
+
+        assert (np.size(b_patch) == NtFine)
+
+        SPatchFull = fem.assemblePatchMatrix(NPatchFine, world.ALocFine, b_patch)
+        KPatchFull = fem.assemblePatchMatrix(NPatchFine, world.ALocFine, a_patch)
+        bPatchFullList = []
+        bPatchFull = np.zeros(len((V.todense())))
+        V = V[:, patch_indices]
+        bPatchFull += prev_fs_sol[patch_indices].T * KPatchFull * V.T
+        bPatchFullList.append(bPatchFull)
+        SPatchFull = V * SPatchFull * V.T
+        KPatchFull = V * KPatchFull * V.T
+
+        correctorsList = linalg.linSolve(KPatchFull + SPatchFull, bPatchFull.T)
+
         return correctorsList
 
     def compute_localized_basis_node(self, b_patch, a_patch, IPatch, basis, node_index):

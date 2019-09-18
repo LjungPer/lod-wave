@@ -22,7 +22,7 @@ def drawCoefficient(N, a, greys=False):
     if greys:
         cmap = 'Greys'
     else:
-        cmap = cm.Greys
+        cmap = cm.Reds
             
     plt.imshow(aCube,
                origin='upper', 

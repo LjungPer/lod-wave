@@ -1,10 +1,10 @@
 # lod-wave
 
 ## Current status:
-#### Working and up to date
-#### Next: Fix parallel computation. Apply pyMOR.
+#### Broken due to missing methods, for example `convertpIndexToCoordinate` in `gridlod.util`.
+#### This is likely due to the Python 3 refactor
 
-## Switching to a virtual environment ([guide](https://alysivji.github.io/setting-up-pyenv-virtualenvwrapper.html) to set this up)
+## Switching to a virtual environment ([guide](https://alysivji.github.io/setting-up-pyenv-virtualenvwrapper.html) to set this up: )
 #### If you have not made a virtual environment for this project:
 
 ```mkvirtualenv lod-wave```

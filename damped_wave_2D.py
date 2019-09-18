@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from gridlod import util, fem, coef, interp, linalg
 from gridlod.world import World
 import lod_wave
+from visualize import drawCoefficient
 from math import log
 import time
 
@@ -25,15 +26,24 @@ numTimeSteps = 20
 n = 2
 
 # ms coefficient B
-B = np.kron(np.random.rand(fine // n, fine // n) * 0.9 + 0.1, np.ones((n, n)))
+B = np.kron(np.random.rand(fine // n, fine // n) * 999.9 + 0.1, np.ones((n, n)))
 bFine = B.flatten()
+#plt.figure("OriginalCoefficient")
+#drawCoefficient(NWorldFine, bFine)
+#plt.rc('text', usetex=True)
+#plt.rc('font', family='serif')
+#cb = plt.colorbar()
+#cb.formatter.set_powerlimits((0,0))
+#cb.ax.tick_params(labelsize=10)
+#plt.show()
 
 # ms coefficient A
-A = np.kron(np.random.rand(fine // n, fine // n) * 0.9 + 0.1, np.ones((n, n)))
+A = np.kron(np.random.rand(fine // n, fine // n) * 9.9 + 0.1, np.ones((n, n)))
 aFine = A.flatten()
 
+
 # localization and mesh width parameters
-NList = [2, 4, 8, 16, 32]
+NList = [2, 4, 8, 16]
 
 error = []
 y = []
